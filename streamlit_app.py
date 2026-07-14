@@ -607,7 +607,7 @@ elif page == "Run Audit":
             use_container_width=True,
         )
 
-    active_urls = [u.strip() for u in raw_urls.splitlines() if u.strip().startswith("http")]
+    active_urls = [u.strip() for u in raw_urls.splitlines() if u.strip().lower().startswith("http")]
 
     if not run_clicked:
         st.stop()
