@@ -584,37 +584,36 @@ elif page == "Run Audit":
     </div>
     """, unsafe_allow_html=True)
 
-    # ── all inputs in main area (works on desktop + mobile) ──────
-    st.markdown(
-        f'<div style="font-size:13px;font-weight:600;color:{NAVY};margin-bottom:4px;">Website URLs</div>'
-        f'<div style="font-family:JetBrains Mono,monospace;font-size:11px;color:{MUTED};margin-bottom:6px;">One URL per line</div>',
-        unsafe_allow_html=True,
-    )
-    raw_urls = st.text_area(
-        label="urls",
-        label_visibility="collapsed",
-        placeholder="https://yoursite.com/\nhttps://yoursite.com/products/\nhttps://yoursite.com/checkout",
-        height=140,
-        key="main_audit_urls",
-    )
-    active_urls = [u.strip() for u in raw_urls.splitlines() if u.strip().startswith("http")]
-
-    col_period, col_btn = st.columns([2, 1])
-    with col_period:
+    # ── st.form batches all inputs — button click is atomic on mobile ──
+    with st.form("audit_form"):
+        st.markdown(
+            f'<div style="font-size:13px;font-weight:600;color:{NAVY};margin-bottom:4px;">Website URLs</div>'
+            f'<div style="font-family:JetBrains Mono,monospace;font-size:11px;color:{MUTED};margin-bottom:6px;">One URL per line</div>',
+            unsafe_allow_html=True,
+        )
+        raw_urls = st.text_area(
+            label="urls",
+            label_visibility="collapsed",
+            placeholder="https://yoursite.com/\nhttps://yoursite.com/products/\nhttps://yoursite.com/checkout",
+            height=140,
+        )
         audit_period = st.text_input(
             "Period label",
             value=f"Q{((datetime.utcnow().month-1)//3)+1} {datetime.utcnow().year}",
         )
-    with col_btn:
-        st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
-        run_clicked = st.button(
-            "Run Audit" if not active_urls else f"Run Audit ({len(active_urls)} URL{'s' if len(active_urls)!=1 else ''})",
+        run_clicked = st.form_submit_button(
+            "Run Audit",
             type="primary",
             use_container_width=True,
-            disabled=not active_urls,
         )
 
+    active_urls = [u.strip() for u in raw_urls.splitlines() if u.strip().startswith("http")]
+
     if not run_clicked:
+        st.stop()
+
+    if not active_urls:
+        st.error("Please enter at least one URL starting with http:// or https://")
         st.stop()
 
     # ── Audit is running ─────────────────────────────────────────
