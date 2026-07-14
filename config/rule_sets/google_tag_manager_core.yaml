@@ -1,0 +1,84 @@
+# ─────────────────────────────────────────────────────────────────
+# Rule set: Google Tag Manager — Core
+# ─────────────────────────────────────────────────────────────────
+
+id: google_tag_manager_core
+name: "Google Tag Manager — Core"
+platform: google_tag_manager
+version: "1.0"
+
+tag_presence:
+  gtm_loaded:
+    description: "GTM container script must load on every page"
+    match_url_contains:
+      - "googletagmanager.com/gtm.js"
+    severity: critical
+
+  page_view:
+    description: "GA4 page_view event must fire"
+    match_url_contains:
+      - "google-analytics.com/g/collect"
+      - "analytics.google.com/g/collect"
+    data_layer_event: "page_view"
+    severity: critical
+
+  purchase:
+    description: "GA4 purchase event with required ecommerce fields"
+    data_layer_event: "purchase"
+    required_data_layer_fields:
+      - "ecommerce.transaction_id"
+      - "ecommerce.value"
+    severity: critical
+
+  view_item:
+    description: "GA4 view_item event on product pages"
+    data_layer_event: "view_item"
+    severity: warning
+
+  begin_checkout:
+    description: "GA4 begin_checkout event"
+    data_layer_event: "begin_checkout"
+    severity: warning
+
+  view_cart:
+    description: "GA4 view_cart event"
+    data_layer_event: "view_cart"
+    severity: warning
+
+duplicate_fires:
+  max_page_views_per_page: 1
+  max_purchase_per_page: 1
+  severity: critical
+  exemptions: []
+
+naming_conventions:
+  style: snake_case
+  severity: warning
+  check_fields:
+    - data_layer_keys
+    - event_names
+  forbidden_patterns:
+    - ".*[A-Z].*"
+
+variable_integrity:
+  severity: critical
+  rules:
+    - name: "item_id_not_empty"
+      field: "item_id"
+      condition: not_empty
+
+    - name: "value_is_numeric"
+      field: "value"
+      condition: is_numeric
+
+    - name: "transaction_id_unique"
+      field: "transaction_id"
+      condition: unique_within_run
+
+load_order:
+  severity: critical
+  rules:
+    - name: "gtm_before_ga4"
+      description: "GTM must load before GA4 collect calls"
+      first: "googletagmanager.com/gtm.js"
+      before: "google-analytics.com/g/collect"

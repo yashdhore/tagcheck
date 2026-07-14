@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tag Health Check — Dashboard Mock</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --ink:#0e1a17;
+    --paper:#f6f4ee;
+    --line:#c9c2b2;
+    --accent:#2f6f4f;
+    --accent-bright:#4fae7c;
+    --amber:#b8863a;
+    --amber-bright:#e0b45c;
+    --red:#a8452f;
+    --red-bright:#e0715a;
+    --muted:#6b6558;
+    --panel:#fff;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:0 0 60px;
+  }
+
+  /* browser chrome to sell "this is a live app" */
+  .chrome{
+    background:#e4e0d4;
+    border-bottom:1px solid var(--line);
+    padding:10px 20px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .chrome .dots{display:flex;gap:6px;}
+  .chrome .dots span{width:10px;height:10px;border-radius:50%;background:#c9c2b2;}
+  .chrome .url{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    background:#fff;
+    border:1px solid var(--line);
+    padding:4px 12px;
+    border-radius:20px;
+    flex:1;
+    max-width:420px;
+  }
+
+  .app{max-width:1180px;margin:0 auto;padding:32px 24px 0;}
+
+  /* top bar */
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:16px;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:18px;
+    margin-bottom:28px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .mark{
+    width:34px;height:34px;
+    background:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--paper);
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:13px;
+  }
+  .brand h1{font-size:19px;font-weight:800;letter-spacing:-0.01em;}
+  .brand .sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
+  .topbar-right{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:var(--muted);
+    text-align:right;
+    line-height:1.5;
+  }
+
+  /* control row */
+  .controls{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:28px;
+    align-items:center;
+  }
+  .select{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    border:1px solid var(--ink);
+    background:#fff;
+    padding:8px 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--ink);
+  }
+  .select .arrow{color:var(--muted);}
+  .btn-run{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:700;
+    background:var(--accent);
+    color:#fff;
+    border:1px solid var(--accent);
+    padding:9px 18px;
+    letter-spacing:.03em;
+  }
+
+  /* score cards */
+  .scorecards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+    margin-bottom:28px;
+  }
+  @media (max-width:760px){ .scorecards{grid-template-columns:repeat(2,1fr);} }
+  .card{
+    border:1.5px solid var(--ink);
+    background:var(--panel);
+    padding:18px 20px;
+  }
+  .card .lbl{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  .card .num{font-size:32px;font-weight:800;letter-spacing:-0.02em;line-height:1;}
+  .card .delta{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    margin-top:8px;
+  }
+  .card.pass .num{color:var(--accent);}
+  .card.warn .num{color:var(--amber);}
+  .card.fail .num{color:var(--red);}
+  .delta.up{color:var(--accent);}
+  .delta.down{color:var(--red);}
+  .delta.flat{color:var(--muted);}
+
+  /* two column: trend + breakdown */
+  .grid2{
+    display:grid;
+    grid-template-columns:1.3fr 1fr;
+    gap:16px;
+    margin-bottom:16px;
+  }
+  @media (max-width:900px){ .grid2{grid-template-columns:1fr;} }
+
+  .panel{
+    border:1.5px solid var(--ink);
+    background:var(--panel);
+    padding:20px 22px;
+  }
+  .panel h2{
+    font-size:14px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    margin-bottom:16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+  }
+  .panel h2 .meta-note{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--muted);
+    text-transform:none;
+    letter-spacing:0;
+  }
+
+  /* trend chart (css bars, quarterly) */
+  .trend{
+    display:flex;
+    align-items:flex-end;
+    gap:18px;
+    height:150px;
+    padding-top:10px;
+    border-bottom:1px solid var(--line);
+  }
+  .trend-col{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-end;
+    height:100%;
+    gap:6px;
+  }
+  .bar{
+    width:100%;
+    max-width:44px;
+    background:var(--accent);
+    position:relative;
+  }
+  .bar.current{background:var(--accent-bright);}
+  .bar-val{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    font-weight:700;
+    margin-bottom:4px;
+  }
+  .trend-labels{
+    display:flex;
+    gap:18px;
+    margin-top:8px;
+  }
+  .trend-labels span{
+    flex:1;
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--muted);
+  }
+
+  /* rule breakdown list */
+  .rule-list{display:flex;flex-direction:column;gap:10px;}
+  .rule-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .rule-name{
+    font-size:12.5px;
+    width:140px;
+    flex-shrink:0;
+    color:#3a362e;
+  }
+  .rule-bar-track{
+    flex:1;
+    height:10px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    overflow:hidden;
+  }
+  .rule-bar-fill{height:100%;}
+  .rule-pct{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    width:34px;
+    text-align:right;
+    color:var(--muted);
+  }
+
+  /* findings table */
+  .panel.findings{margin-bottom:16px;}
+  table{width:100%;border-collapse:collapse;}
+  thead th{
+    text-align:left;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--muted);
+    padding:0 10px 10px;
+    border-bottom:1px solid var(--ink);
+  }
+  tbody td{
+    padding:12px 10px;
+    font-size:13px;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  .sev{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    font-weight:700;
+    text-transform:uppercase;
+    padding:3px 8px;
+    display:inline-block;
+    letter-spacing:.04em;
+  }
+  .sev.crit{background:#f6e2dc;color:var(--red);}
+  .sev.warn{background:#f5e9d3;color:var(--amber);}
+  .sev.pass{background:#e0ede5;color:var(--accent);}
+  .mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);}
+
+  .footer-note{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    text-align:center;
+    margin-top:24px;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+
+  <div class="chrome">
+    <div class="dots"><span></span><span></span><span></span></div>
+    <div class="url">taghealth.analyticsai.io/vail-resorts/q2-2026</div>
+  </div>
+
+  <div class="app">
+
+    <div class="topbar">
+      <div class="brand">
+        <div class="mark">AA</div>
+        <div>
+          <h1>Tag Health Check</h1>
+          <div class="sub">AnalyticsAI Inc. — powered by Adobe Launch audit engine</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        Client: <strong style="color:var(--ink)">Vail Resorts</strong><br>
+        Run: Q2 2026 · June 28, 4:12 PM
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="select">Site: skiwelcome.vail.com <span class="arrow">▾</span></div>
+      <div class="select">Period: Q2 2026 <span class="arrow">▾</span></div>
+      <div class="select">Rule set: Adobe Launch — Core <span class="arrow">▾</span></div>
+      <button class="btn-run">Run new audit</button>
+    </div>
+
+    <div class="scorecards">
+      <div class="card pass">
+        <div class="lbl">Tags passing</div>
+        <div class="num">87%</div>
+        <div class="delta up">▲ 4pts vs Q1</div>
+      </div>
+      <div class="card warn">
+        <div class="lbl">Warnings</div>
+        <div class="num">9</div>
+        <div class="delta down">▼ 2 vs Q1</div>
+      </div>
+      <div class="card fail">
+        <div class="lbl">Critical failures</div>
+        <div class="num">4</div>
+        <div class="delta flat">— unchanged</div>
+      </div>
+      <div class="card">
+        <div class="lbl">Pages scanned</div>
+        <div class="num">312</div>
+        <div class="delta flat">full sitemap crawl</div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h2>Pass rate trend <span class="meta-note">quarterly runs</span></h2>
+        <div class="trend">
+          <div class="trend-col"><div class="bar-val">76%</div><div class="bar" style="height:76%"></div></div>
+          <div class="trend-col"><div class="bar-val">79%</div><div class="bar" style="height:79%"></div></div>
+          <div class="trend-col"><div class="bar-val">83%</div><div class="bar" style="height:83%"></div></div>
+          <div class="trend-col"><div class="bar-val">87%</div><div class="bar current" style="height:87%"></div></div>
+        </div>
+        <div class="trend-labels">
+          <span>Q3 2025</span><span>Q4 2025</span><span>Q1 2026</span><span>Q2 2026</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>By rule category</h2>
+        <div class="rule-list">
+          <div class="rule-row">
+            <div class="rule-name">Tag presence</div>
+            <div class="rule-bar-track"><div class="rule-bar-fill" style="width:94%;background:var(--accent)"></div></div>
+            <div class="rule-pct">94%</div>
+          </div>
+          <div class="rule-row">
+            <div class="rule-name">Naming convention</div>
+            <div class="rule-bar-track"><div class="rule-bar-fill" style="width:88%;background:var(--accent)"></div></div>
+            <div class="rule-pct">88%</div>
+          </div>
+          <div class="rule-row">
+            <div class="rule-name">Duplicate fires</div>
+            <div class="rule-bar-track"><div class="rule-bar-fill" style="width:81%;background:var(--amber-bright)"></div></div>
+            <div class="rule-pct">81%</div>
+          </div>
+          <div class="rule-row">
+            <div class="rule-name">Variable integrity</div>
+            <div class="rule-bar-track"><div class="rule-bar-fill" style="width:79%;background:var(--amber-bright)"></div></div>
+            <div class="rule-pct">79%</div>
+          </div>
+          <div class="rule-row">
+            <div class="rule-name">Load order</div>
+            <div class="rule-bar-track"><div class="rule-bar-fill" style="width:68%;background:var(--red-bright)"></div></div>
+            <div class="rule-pct">68%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel findings">
+      <h2>Critical findings <span class="meta-note">4 of 4 shown</span></h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Severity</th>
+            <th>Page / template</th>
+            <th>Issue</th>
+            <th>Rule</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="sev crit">Critical</span></td>
+            <td class="mono">/booking/checkout</td>
+            <td>Purchase event fires twice on confirmation load, inflating conversion count</td>
+            <td>Duplicate fires</td>
+          </tr>
+          <tr>
+            <td><span class="sev crit">Critical</span></td>
+            <td class="mono">/lift-tickets/*</td>
+            <td>Product ID variable missing on 40% of dynamic pricing pages</td>
+            <td>Variable integrity</td>
+          </tr>
+          <tr>
+            <td><span class="sev crit">Critical</span></td>
+            <td class="mono">/resorts/[slug]</td>
+            <td>Launch library loads after page analytics call, dropping first pageview</td>
+            <td>Load order</td>
+          </tr>
+          <tr>
+            <td><span class="sev crit">Critical</span></td>
+            <td class="mono">/account/rewards</td>
+            <td>Epic Pass tier tag not firing — expected on all logged-in sessions</td>
+            <td>Tag presence</td>
+          </tr>
+          <tr>
+            <td><span class="sev warn">Warning</span></td>
+            <td class="mono">/blog/*</td>
+            <td>Legacy naming convention (camelCase) mixed with current snake_case standard</td>
+            <td>Naming convention</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footer-note">
+      Mock data for pitch purposes — reflects planned Streamlit output structure, not a live audit
+    </div>
+
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,115 @@
+# ─────────────────────────────────────────────────────────────────
+# Rule set: Adobe Launch — Core
+# Defines what the rule engine checks for on Adobe Launch sites.
+# ─────────────────────────────────────────────────────────────────
+
+id: adobe_launch_core
+name: "Adobe Launch — Core"
+platform: adobe_launch
+version: "1.0"
+
+# ── Tag presence rules ───────────────────────────────────────────
+# Network patterns that must be found in requests for a tag to be
+# considered "present" on a given page type.
+
+tag_presence:
+  launch_loaded:
+    description: "Adobe Launch library must load on every page"
+    match_url_contains:
+      - "assets.adobedtm.com"
+      - "launch-"
+    severity: critical
+
+  page_view:
+    description: "Adobe Analytics page view beacon must fire"
+    match_url_contains:
+      - "b/ss/"
+      - "omtrdc.net"
+    data_layer_event: null
+    severity: critical
+
+  purchase:
+    description: "Purchase beacon with revenue and transaction ID"
+    match_url_contains:
+      - "b/ss/"
+    required_params:
+      - "pe=lnk_o"
+      - "pev2=purchase"
+    severity: critical
+
+  product_view:
+    description: "Product detail view beacon"
+    match_url_contains:
+      - "b/ss/"
+    severity: warning
+
+  epic_pass_tier:
+    description: "Epic Pass loyalty tier variable must fire for authenticated users"
+    match_url_contains:
+      - "b/ss/"
+    required_params:
+      - "v1"   # custom eVar for pass tier
+    severity: critical
+
+  user_logged_in:
+    description: "Authenticated state variable on account pages"
+    match_url_contains:
+      - "b/ss/"
+    severity: warning
+
+# ── Duplicate fire rules ─────────────────────────────────────────
+duplicate_fires:
+  max_page_views_per_page: 1
+  max_purchase_per_page: 1
+  severity: critical
+  exemptions:
+    - pattern: "/search"
+      reason: "Search refinement can trigger multiple page views"
+
+# ── Naming convention rules ──────────────────────────────────────
+naming_conventions:
+  style: snake_case        # snake_case | camelCase | PascalCase
+  severity: warning
+  check_fields:
+    - eVars
+    - props
+    - events
+    - data_layer_keys
+  forbidden_patterns:
+    - "^[A-Z]"             # no leading caps
+    - ".*[A-Z].*"          # no camelCase — must be snake_case
+  exempt_fields:
+    - "pageName"           # legacy field, grandfathered
+
+# ── Variable integrity rules ─────────────────────────────────────
+variable_integrity:
+  severity: critical
+  rules:
+    - name: "product_id_not_empty"
+      description: "product_id must not be empty or undefined on product/checkout pages"
+      field: "product_id"
+      condition: not_empty
+
+    - name: "revenue_is_numeric"
+      description: "Revenue must be a valid number on purchase events"
+      field: "revenue"
+      condition: is_numeric
+
+    - name: "transaction_id_unique"
+      description: "Transaction IDs should be unique (flags duplicates in a run)"
+      field: "transaction_id"
+      condition: unique_within_run
+
+# ── Load order rules ─────────────────────────────────────────────
+load_order:
+  severity: critical
+  rules:
+    - name: "launch_before_analytics"
+      description: "Adobe Launch library must load before any b/ss/ beacon fires"
+      first: "assets.adobedtm.com"
+      before: "b/ss/"
+
+    - name: "launch_in_head"
+      description: "Launch script tag should appear in <head>, not deferred to <body>"
+      tag: "assets.adobedtm.com"
+      position: head

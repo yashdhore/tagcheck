@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://www.vail.com/",
+    "page_type": "home",
+    "requests": [
+      {"url": "https://assets.adobedtm.com/launch-abc123.min.js", "method": "GET", "timestamp_ms": 100, "query_params": {}},
+      {"url": "https://vail.112.2o7.net/b/ss/vailprod/1/JS-2.22/s1234?pageName=home&v1=&events=event1", "method": "GET", "timestamp_ms": 200, "query_params": {"pageName": "home", "events": "event1"}}
+    ],
+    "data_layer": [
+      {"event": "page_view", "payload": {"event": "page_view", "page_name": "home"}, "timestamp_ms": 150}
+    ],
+    "script_load_order": ["https://assets.adobedtm.com/launch-abc123.min.js"],
+    "has_head_scripts": ["https://assets.adobedtm.com/launch-abc123.min.js"],
+    "error": null
+  },
+  {
+    "url": "https://www.vail.com/booking/checkout",
+    "page_type": "checkout",
+    "requests": [
+      {"url": "https://assets.adobedtm.com/launch-abc123.min.js", "method": "GET", "timestamp_ms": 100, "query_params": {}},
+      {"url": "https://vail.112.2o7.net/b/ss/vailprod/1/JS-2.22/s001?pageName=checkout&events=purchase&products=;SKI-001;1;299", "method": "GET", "timestamp_ms": 200, "query_params": {"pageName": "checkout", "events": "purchase"}},
+      {"url": "https://vail.112.2o7.net/b/ss/vailprod/1/JS-2.22/s002?pageName=checkout&events=purchase&products=;SKI-001;1;299", "method": "GET", "timestamp_ms": 210, "query_params": {"pageName": "checkout", "events": "purchase"}}
+    ],
+    "data_layer": [
+      {"event": "begin_checkout", "payload": {"event": "begin_checkout", "transaction_id": "TXN-1042", "revenue": "undefined"}, "timestamp_ms": 180},
+      {"event": "purchase", "payload": {"event": "purchase", "transaction_id": "TXN-1042", "revenue": "undefined"}, "timestamp_ms": 205},
+      {"event": "purchase", "payload": {"event": "purchase", "transaction_id": "TXN-1042", "revenue": "undefined"}, "timestamp_ms": 212}
+    ],
+    "script_load_order": ["https://assets.adobedtm.com/launch-abc123.min.js"],
+    "has_head_scripts": ["https://assets.adobedtm.com/launch-abc123.min.js"],
+    "error": null
+  },
+  {
+    "url": "https://www.vail.com/lift-tickets/",
+    "page_type": "product",
+    "requests": [
+      {"url": "https://vail.112.2o7.net/b/ss/vailprod/1/JS-2.22/s003?pageName=lift-tickets", "method": "GET", "timestamp_ms": 180, "query_params": {"pageName": "lift-tickets"}},
+      {"url": "https://assets.adobedtm.com/launch-abc123.min.js", "method": "GET", "timestamp_ms": 300, "query_params": {}}
+    ],
+    "data_layer": [
+      {"event": "page_view", "payload": {"event": "page_view", "productName": "Epic Day Pass", "resortCode": "VAIL"}, "timestamp_ms": 170}
+    ],
+    "script_load_order": ["https://assets.adobedtm.com/launch-abc123.min.js"],
+    "has_head_scripts": [],
+    "error": null
+  }
+]

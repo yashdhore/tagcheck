@@ -1,0 +1,103 @@
+# ─────────────────────────────────────────────────────────────────
+# Client config: Vail Resorts
+# Edit this file to control what URLs get audited and what the
+# rule engine expects to find on each page type.
+# ─────────────────────────────────────────────────────────────────
+
+client:
+  name: "Vail Resorts"
+  id: vail_resorts
+  contact: ""
+
+# Tag platform in use (adobe_launch | google_tag_manager | both)
+platform: adobe_launch
+
+# Rule set to apply (must match a file in config/rule_sets/)
+rule_set: adobe_launch_core
+
+# ── URLs to audit ────────────────────────────────────────────────
+# You can list explicit URLs, a sitemap URL, or both.
+# The crawler processes all unique URLs found.
+
+sitemap_url: ""          # e.g. https://www.vail.com/sitemap.xml
+
+urls:
+  - https://www.vail.com/
+  - https://www.vail.com/lift-tickets/
+  - https://www.vail.com/booking/checkout
+  - https://www.vail.com/resorts/vail
+  - https://www.vail.com/account/rewards
+  - https://www.vail.com/blog/
+
+# Page-type mapping — regex matched against URL path.
+# Used by rule engine to apply page-type-specific expectations.
+page_types:
+  home:
+    pattern: "^/$"
+    expected_events:
+      - page_view
+      - launch_loaded
+
+  product:
+    pattern: "^/lift-tickets"
+    expected_events:
+      - page_view
+      - product_view
+      - launch_loaded
+    required_variables:
+      - product_id
+      - product_name
+      - product_price
+
+  checkout:
+    pattern: "^/booking/checkout"
+    expected_events:
+      - page_view
+      - begin_checkout
+      - purchase
+      - launch_loaded
+    required_variables:
+      - transaction_id
+      - revenue
+      - product_id
+
+  resort:
+    pattern: "^/resorts/"
+    expected_events:
+      - page_view
+      - launch_loaded
+
+  account:
+    pattern: "^/account/"
+    expected_events:
+      - page_view
+      - user_logged_in
+      - epic_pass_tier
+      - launch_loaded
+
+  blog:
+    pattern: "^/blog/"
+    expected_events:
+      - page_view
+      - launch_loaded
+
+  default:
+    pattern: ".*"
+    expected_events:
+      - page_view
+      - launch_loaded
+
+# ── Crawler settings ─────────────────────────────────────────────
+crawler:
+  headless: true
+  timeout_ms: 30000
+  wait_after_load_ms: 2000
+  max_pages: 50              # cap for sitemap crawls
+  respect_robots_txt: true
+  auth:
+    enabled: false
+    login_url: ""
+    username_field: ""
+    password_field: ""
+    username: ""
+    password: ""

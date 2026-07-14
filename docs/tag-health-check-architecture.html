@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tag Health Check — Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --ink:#0e1a17;
+    --paper:#f6f4ee;
+    --line:#c9c2b2;
+    --accent:#2f6f4f;
+    --accent-bright:#4fae7c;
+    --amber:#b8863a;
+    --red:#a8452f;
+    --muted:#6b6558;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{-webkit-font-smoothing:antialiased;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:48px 24px 80px;
+  }
+
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  /* header */
+  header{
+    border-bottom:2px solid var(--ink);
+    padding-bottom:20px;
+    margin-bottom:36px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:16px;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--accent);
+    font-weight:600;
+  }
+  h1{
+    font-size:clamp(28px,4vw,42px);
+    font-weight:800;
+    letter-spacing:-0.02em;
+    line-height:1.05;
+    margin-top:6px;
+  }
+  .meta{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    text-align:right;
+    line-height:1.6;
+  }
+
+  /* legend */
+  .legend{
+    display:flex;
+    gap:24px;
+    flex-wrap:wrap;
+    margin-bottom:40px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+
+  /* pipeline */
+  .pipeline{
+    display:flex;
+    flex-direction:column;
+    gap:0;
+    position:relative;
+  }
+
+  .stage{
+    display:grid;
+    grid-template-columns:64px 1fr;
+    gap:20px;
+    position:relative;
+    padding-bottom:36px;
+  }
+  .stage:last-child{padding-bottom:0;}
+
+  .stage-num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    font-weight:700;
+    color:var(--accent);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .stage-num .n{
+    width:40px;height:40px;
+    border:2px solid var(--ink);
+    background:var(--paper);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;
+    z-index:2;
+  }
+  .connector{
+    flex:1;
+    width:2px;
+    background:repeating-linear-gradient(to bottom, var(--line) 0, var(--line) 4px, transparent 4px, transparent 8px);
+    margin-top:4px;
+  }
+  .stage:last-child .connector{display:none;}
+
+  .stage-body{
+    border:1.5px solid var(--ink);
+    background:#fff;
+    padding:20px 24px;
+  }
+  .stage-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .stage-title{
+    font-size:19px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+  }
+  .stage-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    padding:3px 8px;
+    border:1px solid currentColor;
+    color:var(--accent);
+    white-space:nowrap;
+  }
+  .stage-desc{
+    font-size:14px;
+    color:#3a362e;
+    line-height:1.55;
+    max-width:70ch;
+  }
+  .stage-detail{
+    margin-top:12px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .chip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    padding:4px 10px;
+    color:var(--muted);
+  }
+
+  /* branch for parallel scan */
+  .branch-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    margin-top:14px;
+  }
+  @media (max-width:640px){ .branch-row{grid-template-columns:1fr;} .stage{grid-template-columns:40px 1fr;} }
+  .branch{
+    border:1px dashed var(--line);
+    padding:12px 14px;
+    background:#fbfaf7;
+  }
+  .branch-title{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    font-weight:700;
+    color:var(--amber);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    margin-bottom:4px;
+  }
+  .branch p{font-size:13px;color:#3a362e;line-height:1.5;}
+
+  /* output card special */
+  .stage-body.output{
+    background:var(--ink);
+    color:var(--paper);
+    border-color:var(--ink);
+  }
+  .stage-body.output .stage-desc{color:#d8d4c8;}
+  .stage-body.output .stage-tag{color:var(--accent-bright);}
+  .stage-body.output .chip{background:#1a2b25;border-color:#3a4c44;color:#b9c9c0;}
+  .stage-body.output .stage-title{color:var(--paper);}
+
+  /* score readout */
+  .score-row{
+    display:flex;
+    gap:16px;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  .score{
+    flex:1;
+    min-width:120px;
+    border:1px solid #3a4c44;
+    padding:12px 14px;
+  }
+  .score .val{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;}
+  .score.pass .val{color:var(--accent-bright);}
+  .score.warn .val{color:#e0b45c;}
+  .score.fail .val{color:#e0715a;}
+  .score .lbl{font-size:10.5px;color:#8f9a92;text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+
+  /* footer note */
+  .footnote{
+    margin-top:44px;
+    padding-top:20px;
+    border-top:1px solid var(--line);
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:var(--muted);
+  }
+  .footnote strong{color:var(--ink);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="eyebrow">AnalyticsAI Inc. — Internal Build Spec</div>
+      <h1>Tag Health Check<br>Architecture</h1>
+    </div>
+    <div class="meta">
+      v0.1 — pilot scope<br>
+      Target: Vail Phase 1 → productized offer<br>
+      Stack: Adobe Launch · Python · Streamlit
+    </div>
+  </header>
+
+  <div class="legend">
+    <span><span class="dot" style="background:var(--accent)"></span> Automated step</span>
+    <span><span class="dot" style="background:var(--amber)"></span> Human-in-the-loop</span>
+    <span><span class="dot" style="background:var(--ink)"></span> Client-facing output</span>
+  </div>
+
+  <div class="pipeline">
+
+    <!-- Stage 1 -->
+    <div class="stage">
+      <div class="stage-num"><div class="n">01</div><div class="connector"></div></div>
+      <div class="stage-body">
+        <div class="stage-head">
+          <div class="stage-title">Config intake</div>
+          <div class="stage-tag">Human-in-the-loop</div>
+        </div>
+        <p class="stage-desc">Client's expected tag rules get turned into a config file — what should fire, where, and under what conditions. This is what makes the tool reusable across clients instead of Vail-specific.</p>
+        <div class="stage-detail">
+          <span class="chip">tag_rules.yaml</span>
+          <span class="chip">Adobe Launch export</span>
+          <span class="chip">naming convention map</span>
+          <span class="chip">expected events / page types</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 2 -->
+    <div class="stage">
+      <div class="stage-num"><div class="n">02</div><div class="connector"></div></div>
+      <div class="stage-body">
+        <div class="stage-head">
+          <div class="stage-title">Site crawl &amp; capture</div>
+          <div class="stage-tag">Automated</div>
+        </div>
+        <p class="stage-desc">Headless crawler walks the site (sitemap or defined page list), and for every page captures the network layer — every tag call actually fired, not just what's configured in Launch.</p>
+        <div class="branch-row">
+          <div class="branch">
+            <div class="branch-title">Crawl engine</div>
+            <p>Playwright/Puppeteer headless browser, page-by-page, respects auth walls and geo rules.</p>
+          </div>
+          <div class="branch">
+            <div class="branch-title">Capture layer</div>
+            <p>Network request interception — logs every beacon, pixel, and dataLayer push per page.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 3 -->
+    <div class="stage">
+      <div class="stage-num"><div class="n">03</div><div class="connector"></div></div>
+      <div class="stage-body">
+        <div class="stage-head">
+          <div class="stage-title">Rule engine — audit logic</div>
+          <div class="stage-tag">Automated</div>
+        </div>
+        <p class="stage-desc">Captured tags get diffed against the config from Step 1. This is the core IP — the same audit methodology your subcontractor built for Vail, generalized into reusable rule checks.</p>
+        <div class="stage-detail">
+          <span class="chip">missing tags</span>
+          <span class="chip">duplicate fires</span>
+          <span class="chip">malformed variables</span>
+          <span class="chip">naming violations</span>
+          <span class="chip">load-order issues</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stage 4 -->
+    <div class="stage">
+      <div class="stage-num"><div class="n">04</div><div class="connector"></div></div>
+      <div class="stage-body">
+        <div class="stage-head">
+          <div class="stage-title">Analyst review</div>
+          <div class="stage-tag">Human-in-the-loop</div>
+        </div>
+        <p class="stage-desc">Raw findings get triaged — false positives filtered out, severity assigned, and findings annotated with plain-language explanations. This is the "human-reviewed" part of your pitch, and it's what differentiates you from a raw ObservePoint export.</p>
+      </div>
+    </div>
+
+    <!-- Stage 5 -->
+    <div class="stage">
+      <div class="stage-num"><div class="n">05</div></div>
+      <div class="stage-body output">
+        <div class="stage-head">
+          <div class="stage-title">Client report — Streamlit dashboard</div>
+          <div class="stage-tag">Client-facing output</div>
+        </div>
+        <p class="stage-desc">Delivered as a live Streamlit app: pass/fail by page and rule, trend view for repeat quarterly runs, and an exportable PDF summary for stakeholders who won't open the dashboard.</p>
+        <div class="score-row">
+          <div class="score pass"><div class="val">87%</div><div class="lbl">Tags passing</div></div>
+          <div class="score warn"><div class="val">9</div><div class="lbl">Warnings</div></div>
+          <div class="score fail"><div class="val">4</div><div class="lbl">Critical failures</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footnote">
+    <div><strong>Reusable across engagements</strong> — Steps 2–3 run unattended once config exists; Step 1 config is the only per-client setup cost.</div>
+    <div><strong>Quarterly model</strong> — re-run Steps 2–4 each quarter against the same config for the subscription offer.</div>
+  </div>
+
+</div>
+</body>
+</html>

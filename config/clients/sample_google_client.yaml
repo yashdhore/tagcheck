@@ -1,0 +1,72 @@
+# ─────────────────────────────────────────────────────────────────
+# Sample client config: Google Tag Manager site
+# Copy and rename this file for each new client.
+# ─────────────────────────────────────────────────────────────────
+
+client:
+  name: "Sample GTM Client"
+  id: sample_gtm
+  contact: ""
+
+platform: google_tag_manager
+rule_set: google_tag_manager_core
+
+sitemap_url: ""
+
+urls:
+  - https://example.com/
+  - https://example.com/products/
+  - https://example.com/cart
+  - https://example.com/checkout
+
+page_types:
+  home:
+    pattern: "^/$"
+    expected_events:
+      - page_view
+      - gtm_loaded
+
+  product:
+    pattern: "^/products"
+    expected_events:
+      - page_view
+      - view_item
+    required_variables:
+      - item_id
+      - item_name
+      - price
+
+  cart:
+    pattern: "^/cart"
+    expected_events:
+      - page_view
+      - view_cart
+
+  checkout:
+    pattern: "^/checkout"
+    expected_events:
+      - page_view
+      - begin_checkout
+      - purchase
+    required_variables:
+      - transaction_id
+      - value
+
+  default:
+    pattern: ".*"
+    expected_events:
+      - page_view
+
+crawler:
+  headless: true
+  timeout_ms: 30000
+  wait_after_load_ms: 2000
+  max_pages: 50
+  respect_robots_txt: true
+  auth:
+    enabled: false
+    login_url: ""
+    username_field: ""
+    password_field: ""
+    username: ""
+    password: ""

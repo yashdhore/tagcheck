@@ -1,0 +1,133 @@
+{
+  "client_id": "vail_resorts",
+  "client_name": "Vail Resorts",
+  "rule_set_id": "adobe_launch_core",
+  "period_label": "Q2 2026",
+  "run_id": "demo01",
+  "started_at": "2026-06-28T16:10:00",
+  "completed_at": "2026-06-28T16:12:14",
+  "findings": [
+    {
+      "severity": "critical",
+      "category": "Duplicate fires",
+      "page_url": "https://www.vail.com/booking/checkout",
+      "page_type": "checkout",
+      "rule_name": "duplicate_purchase",
+      "description": "Purchase event fired 2× (max 1)",
+      "detail": "Double-firing purchase inflates conversion count and revenue"
+    },
+    {
+      "severity": "critical",
+      "category": "Variable integrity",
+      "page_url": "https://www.vail.com/lift-tickets/",
+      "page_type": "product",
+      "rule_name": "product_id_not_empty",
+      "description": "product_id is empty or missing",
+      "detail": "Field 'product_id' was null/empty/undefined on 40% of dynamic pricing pages"
+    },
+    {
+      "severity": "critical",
+      "category": "Load order",
+      "page_url": "https://www.vail.com/resorts/vail",
+      "page_type": "resort",
+      "rule_name": "launch_before_analytics",
+      "description": "Adobe Launch library must load before any b/ss/ beacon fires",
+      "detail": "'b/ss/' fired before 'assets.adobedtm.com' loaded"
+    },
+    {
+      "severity": "critical",
+      "category": "Tag presence",
+      "page_url": "https://www.vail.com/account/rewards",
+      "page_type": "account",
+      "rule_name": "epic_pass_tier",
+      "description": "Epic Pass loyalty tier variable must fire for authenticated users",
+      "detail": "No network request or dataLayer event matched rule 'epic_pass_tier'"
+    },
+    {
+      "severity": "warning",
+      "category": "Naming convention",
+      "page_url": "https://www.vail.com/blog/",
+      "page_type": "blog",
+      "rule_name": "naming_convention_violation",
+      "description": "Naming convention (snake_case) violated by 3 key(s)",
+      "detail": "Offending keys: pageTitle, trackingID, userType"
+    },
+    {
+      "severity": "warning",
+      "category": "Tag presence",
+      "page_url": "https://www.vail.com/",
+      "page_type": "home",
+      "rule_name": "launch_loaded",
+      "description": "Adobe Launch library must load on every page",
+      "detail": "No network request matched 'assets.adobedtm.com'"
+    },
+    {
+      "severity": "warning",
+      "category": "Duplicate fires",
+      "page_url": "https://www.vail.com/resorts/vail",
+      "page_type": "resort",
+      "rule_name": "duplicate_page_view",
+      "description": "Analytics beacon fired 2× (max 1)",
+      "detail": "Multiple page-view beacons detected"
+    },
+    {
+      "severity": "warning",
+      "category": "Variable integrity",
+      "page_url": "https://www.vail.com/booking/checkout",
+      "page_type": "checkout",
+      "rule_name": "revenue_is_numeric",
+      "description": "Revenue must be a valid number on purchase events",
+      "detail": "Got 'undefined' which is not a valid number"
+    },
+    {
+      "severity": "warning",
+      "category": "Naming convention",
+      "page_url": "https://www.vail.com/lift-tickets/",
+      "page_type": "product",
+      "rule_name": "naming_convention_violation",
+      "description": "Naming convention (snake_case) violated by 2 key(s)",
+      "detail": "Offending keys: productName, resortCode"
+    },
+    {
+      "severity": "warning",
+      "category": "Load order",
+      "page_url": "https://www.vail.com/account/rewards",
+      "page_type": "account",
+      "rule_name": "launch_in_head",
+      "description": "Launch script tag should appear in head",
+      "detail": "Launch script found in body, not in head element"
+    },
+    {
+      "severity": "warning",
+      "category": "Tag presence",
+      "page_url": "https://www.vail.com/lift-tickets/",
+      "page_type": "product",
+      "rule_name": "product_view",
+      "description": "Product detail view beacon",
+      "detail": "No network request or dataLayer event matched rule 'product_view'"
+    },
+    {
+      "severity": "warning",
+      "category": "Variable integrity",
+      "page_url": "https://www.vail.com/booking/checkout",
+      "page_type": "checkout",
+      "rule_name": "transaction_id_unique",
+      "description": "transaction_id is not unique",
+      "detail": "Value 'TXN-1042' already seen in this audit run"
+    }
+  ],
+  "pages_summary": [
+    {"url": "https://www.vail.com/", "page_type": "home", "request_count": 48, "data_layer_event_count": 3, "error": null},
+    {"url": "https://www.vail.com/lift-tickets/", "page_type": "product", "request_count": 61, "data_layer_event_count": 4, "error": null},
+    {"url": "https://www.vail.com/booking/checkout", "page_type": "checkout", "request_count": 74, "data_layer_event_count": 6, "error": null},
+    {"url": "https://www.vail.com/resorts/vail", "page_type": "resort", "request_count": 55, "data_layer_event_count": 2, "error": null},
+    {"url": "https://www.vail.com/account/rewards", "page_type": "account", "request_count": 42, "data_layer_event_count": 1, "error": null},
+    {"url": "https://www.vail.com/blog/", "page_type": "blog", "request_count": 38, "data_layer_event_count": 2, "error": null}
+  ],
+  "_trend": [
+    {"period": "Q3 2025", "pass_rate": 76},
+    {"period": "Q4 2025", "pass_rate": 79},
+    {"period": "Q1 2026", "pass_rate": 83},
+    {"period": "Q2 2026", "pass_rate": 87}
+  ]
+}
