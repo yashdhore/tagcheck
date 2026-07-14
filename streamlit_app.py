@@ -395,60 +395,13 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # ── Quick Audit inputs (shown on Run Audit page) ──────────────
+    # sidebar only handles navigation — inputs moved to main area for mobile compat
     sidebar_urls: list[str] = []
-    sidebar_platform: str = "adobe_launch"
+    sidebar_platform: str = "auto"
     sidebar_period: str = ""
     sidebar_run_clicked: bool = False
 
-    if page == "Run Audit":
-        st.markdown(
-            f'<div style="font-family:JetBrains Mono,monospace;font-size:10px;'
-            f'text-transform:uppercase;letter-spacing:.08em;color:#8899BB;'
-            f'margin-bottom:6px;">Website URLs</div>',
-            unsafe_allow_html=True,
-        )
-        raw_urls = st.text_area(
-            label="urls_input",
-            label_visibility="collapsed",
-            placeholder="https://yoursite.com/\nhttps://yoursite.com/products/\nhttps://yoursite.com/checkout",
-            height=160,
-            help="Enter one URL per line. All listed pages will be crawled.",
-        )
-        sidebar_urls = [u.strip() for u in raw_urls.splitlines() if u.strip().startswith("http")]
-
-        sidebar_platform = "auto"
-
-        st.markdown(
-            f'<div style="font-family:JetBrains Mono,monospace;font-size:10px;'
-            f'text-transform:uppercase;letter-spacing:.08em;color:#8899BB;'
-            f'margin:12px 0 6px;">Period Label</div>',
-            unsafe_allow_html=True,
-        )
-        sidebar_period = st.text_input(
-            label="period",
-            label_visibility="collapsed",
-            value=f"Q{((datetime.utcnow().month-1)//3)+1} {datetime.utcnow().year}",
-        )
-
-        st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
-
-        if sidebar_urls:
-            sidebar_run_clicked = st.button(
-                f"Run Audit  ({len(sidebar_urls)} URL{'s' if len(sidebar_urls) != 1 else ''})",
-                type="primary",
-                use_container_width=True,
-            )
-        else:
-            st.button("Run Audit", type="primary", use_container_width=True, disabled=True)
-            st.markdown(
-                f'<div style="font-family:JetBrains Mono,monospace;font-size:10px;'
-                f'color:#8899BB;text-align:center;margin-top:4px;">'
-                f'Enter at least one URL above</div>',
-                unsafe_allow_html=True,
-            )
-
-    elif page == "Dashboard":
+    if page == "Dashboard":
         selected_client = None
     else:
         selected_client = None
@@ -626,72 +579,62 @@ elif page == "Run Audit":
       <div>
         <div class="brand-title">Run New Audit</div>
         <div class="grad-line"></div>
-        <div class="brand-sub">Enter URLs in the sidebar → click Run Audit</div>
+        <div class="brand-sub">Enter URLs below and click Run Audit</div>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
-    if not sidebar_urls:
-        st.markdown(f"""
-        <div class="empty-state">
-          <div class="icon">🔗</div>
-          <div style="font-size:16px;font-weight:600;color:{NAVY};margin-bottom:8px;">
-            Paste your website URLs in the sidebar
-          </div>
-          <div style="font-size:13px;color:{MUTED};max-width:40ch;margin:0 auto;line-height:1.6;">
-            Enter one URL per line, choose your tag platform, then click
-            <strong>Run Audit</strong> to start crawling.
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-        st.stop()
+    # ── all inputs in main area (works on desktop + mobile) ──────
+    st.markdown(
+        f'<div style="font-size:13px;font-weight:600;color:{NAVY};margin-bottom:4px;">Website URLs</div>'
+        f'<div style="font-family:JetBrains Mono,monospace;font-size:11px;color:{MUTED};margin-bottom:6px;">One URL per line</div>',
+        unsafe_allow_html=True,
+    )
+    raw_urls = st.text_area(
+        label="urls",
+        label_visibility="collapsed",
+        placeholder="https://yoursite.com/\nhttps://yoursite.com/products/\nhttps://yoursite.com/checkout",
+        height=140,
+        key="main_audit_urls",
+    )
+    active_urls = [u.strip() for u in raw_urls.splitlines() if u.strip().startswith("http")]
 
-    if not sidebar_run_clicked:
-        # show a preview of what will be audited
-        st.markdown(f"""
-        <div class="panel">
-          <div class="panel-title">Ready to audit
-            <span class="meta-note">{len(sidebar_urls)} URL(s) · {sidebar_platform.replace("_"," ").title()} · {sidebar_period}</span>
-          </div>
-        """, unsafe_allow_html=True)
-        for u in sidebar_urls:
-            st.markdown(
-                f'<div style="font-family:JetBrains Mono,monospace;font-size:12px;'
-                f'padding:6px 0;border-bottom:1px solid {BORDER};color:{NAVY};">'
-                f'🔗 {u}</div>',
-                unsafe_allow_html=True,
-            )
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown(
-            f'<div style="font-size:13px;color:{MUTED};margin-top:12px;">'
-            f'Click <strong>Run Audit</strong> in the sidebar to start.</div>',
-            unsafe_allow_html=True,
+    col_period, col_btn = st.columns([2, 1])
+    with col_period:
+        audit_period = st.text_input(
+            "Period label",
+            value=f"Q{((datetime.utcnow().month-1)//3)+1} {datetime.utcnow().year}",
         )
+    with col_btn:
+        st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
+        run_clicked = st.button(
+            "Run Audit" if not active_urls else f"Run Audit ({len(active_urls)} URL{'s' if len(active_urls)!=1 else ''})",
+            type="primary",
+            use_container_width=True,
+            disabled=not active_urls,
+        )
+
+    if not run_clicked:
         st.stop()
 
     # ── Audit is running ─────────────────────────────────────────
-    try:
-        from playwright.async_api import async_playwright  # noqa: F401
-    except ImportError:
-        st.error("Playwright is not installed. Run: `pip install playwright && playwright install chromium`")
-        st.stop()
-
-    # start with adobe as default — will be corrected after detection
     rs_id = "adobe_launch_core"
     client_cfg = {
-        "client": {"id": "quick_audit", "name": sidebar_urls[0].split("/")[2]},
+        "client": {"id": "quick_audit", "name": active_urls[0].split("/")[2]},
         "platform": "adobe_launch",
         "rule_set": rs_id,
-        "urls": sidebar_urls,
+        "urls": active_urls,
         "sitemap_url": "",
         "page_types": {
-            "home":     {"pattern": "^/$",         "expected_events": ["page_view", "launch_loaded" if sidebar_platform == "adobe_launch" else "gtm_loaded"]},
-            "product":  {"pattern": "/product",    "expected_events": ["page_view"]},
-            "checkout": {"pattern": "/checkout",   "expected_events": ["page_view", "purchase"]},
-            "default":  {"pattern": ".*",          "expected_events": ["page_view"]},
+            "home":     {"pattern": "^/$",       "expected_events": ["page_view", "launch_loaded"]},
+            "product":  {"pattern": "/product",  "expected_events": ["page_view"]},
+            "checkout": {"pattern": "/checkout", "expected_events": ["page_view", "purchase"]},
+            "default":  {"pattern": ".*",        "expected_events": ["page_view"]},
         },
         "crawler": {"headless": True, "timeout_ms": 30000, "wait_after_load_ms": 2000, "max_pages": 50, "auth": {"enabled": False}},
     }
+    sidebar_period = audit_period
+    sidebar_urls   = active_urls
 
     progress_bar = st.progress(0)
     status_box = st.empty()
@@ -706,7 +649,7 @@ elif page == "Run Audit":
         log_area.code("\n".join(log_lines[-12:]))
 
     status_box.markdown(
-        f'<div class="step-indicator">Stage 2 — Crawling {len(sidebar_urls)} page(s)...</div>',
+        f'<div class="step-indicator">Stage 2 — Crawling {len(active_urls)} page(s)...</div>',
         unsafe_allow_html=True,
     )
 
