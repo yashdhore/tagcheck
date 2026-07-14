@@ -17,6 +17,13 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
+# ── install Playwright browsers once (needed on Streamlit Cloud) ──
+import subprocess
+@st.cache_resource(show_spinner="Installing browser (first run only)…")
+def _install_playwright():
+    subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True)
+_install_playwright()
+
 from src.utils.config_loader import list_clients, list_rule_sets, load_client, load_rule_set, load_client_with_rules
 from src.utils.models import AuditRun, Finding, RuleCategory, Severity
 from src.report.run_store import list_runs, load_run, save_run
