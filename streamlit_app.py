@@ -419,7 +419,11 @@ if page == "Dashboard":
     showing_sample = run is None
     if showing_sample:
         run = _load_sample_run()
-        st.info("No audit runs yet — showing demo data. Use **Run Audit** to generate a real report.")
+        # saved runs live on the server's disk, which Streamlit Cloud wipes on every restart
+        st.warning(
+            "**Sample report with fictional data.** No audits have been run since the app last "
+            "restarted. Use **Run Audit** to audit a real site."
+        )
 
     # earlier audits of the same site, oldest first, for the trend and the delta
     history: list[AuditRun] = []
@@ -434,7 +438,9 @@ if page == "Dashboard":
         history.sort(key=lambda r: r.completed_at or r.started_at)
 
     prior = history[-2] if len(history) >= 2 else None
-    if prior is None:
+    if showing_sample:
+        delta_html = f'<div class="kpi-delta" style="color:{MUTED}">sample data</div>'
+    elif prior is None:
         delta_html = f'<div class="kpi-delta" style="color:{MUTED}">first audit of this site</div>'
     else:
         diff = round(run.pass_rate - prior.pass_rate, 1)
@@ -450,7 +456,7 @@ if page == "Dashboard":
         <div class="brand-sub">AnalyticsAI Inc. — Adobe Launch &amp; GTM audit engine</div>
       </div>
       <div class="run-meta">
-        Client: <strong style="color:{NAVY}">{run.client_name}</strong><br>
+        Client: <strong style="color:{NAVY}">{run.client_name}{' (sample)' if showing_sample else ''}</strong><br>
         Run: {run.period_label} &nbsp;·&nbsp;
         {run.completed_at.strftime('%b %d, %Y %H:%M') if run.completed_at else '—'}
       </div>
