@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Thank you | Lemon Stand</title>
+<link rel="stylesheet" href="../style.css">
+<script>window.dataLayer = window.dataLayer || [];</script>
+<script src="../js/launch-lemonstand.min.js"></script>
+<script>
+  dataLayer.push({event: "page_view", page_name: "thank you"});
+  lemon.beacon({pageName: "thank-you", ch: "checkout"});
+  dataLayer.push({event: "purchase", product_id: "LEM-CLS-16", transaction_id: "ORD-1042", revenue: "undefined"});
+  // the order-confirmation widget pushes the same purchase again
+  dataLayer.push({event: "purchase", product_id: "LEM-CLS-16", transaction_id: "ORD-1042", revenue: "undefined"});
+  // no purchase beacon (pe=lnk_o, pev2=purchase) is ever sent to Adobe
+</script>
+</head>
+<body>
+<header><div class="brand">🍋 Lemon Stand</div><nav><a href="../index.html">Home</a><a href="../products/classic-lemonade.html">Classic</a><a href="../products/strawberry-lemonade.html">Strawberry</a><a href="../about.html">Our story</a><a href="../cart.html">Cart</a></nav></header>
+<main><div class="card"><h1>Thanks for your order! 🍋</h1><p>Order ORD-1042 is being squeezed now.</p><a class="btn" href="../index.html">Back to the shop</a></div><p class="note">Lemon Stand is a demo shop for Tag Health Check. Nothing here is for sale.</p></main>
+</body>
+</html>

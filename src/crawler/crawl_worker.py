@@ -51,14 +51,19 @@ def capture_page(context, url, page_types_cfg, timeout, wait_after_ms):
         for item in raw_dl:
             data_layer.append({"event": item.get("event",""), "payload": item.get("payload",{}), "timestamp_ms": item.get("ts",0)})
         script_order = page.evaluate("Array.from(document.querySelectorAll('script[src]')).map(s=>s.src)") or []
+        js_globals = page.evaluate(
+            "['_satellite','s_c_il','AppMeasurement','google_tag_manager','gtag','utag','analytics']"
+            ".filter(n => typeof window[n] !== 'undefined')"
+        ) or []
     except Exception as exc:
         error = str(exc)
         script_order = []
+        js_globals = []
     finally:
         page.close()
 
     # auto-detect tag platforms present on the page
-    detected_platforms = _detect_platforms(requests, script_order)
+    detected_platforms = _detect_platforms(requests, script_order, js_globals)
 
     return {
         "url": url,
@@ -70,11 +75,21 @@ def capture_page(context, url, page_types_cfg, timeout, wait_after_ms):
         "error": error,
         "captured_at": datetime.now().isoformat(),
         "detected_platforms": detected_platforms,
+        "js_globals": js_globals,
     }
 
 
-def _detect_platforms(requests, script_order):
-    """Return list of tag platforms detected from network requests."""
+# page globals that prove a platform is running, even when it is self-hosted
+GLOBAL_SIGNATURES = {
+    "adobe_launch":       "_satellite",
+    "adobe_analytics":    "s_c_il",
+    "google_tag_manager": "google_tag_manager",
+    "tealium":            "utag",
+}
+
+
+def _detect_platforms(requests, script_order, js_globals=()):
+    """Return list of tag platforms detected from network requests and page globals."""
     all_urls = [r["url"] for r in requests] + script_order
     detected = []
 
@@ -93,7 +108,7 @@ def _detect_platforms(requests, script_order):
     }
 
     for platform, patterns in SIGNATURES.items():
-        if any(pat in u for u in all_urls for pat in patterns):
+        if any(pat in u for u in all_urls for pat in patterns) or GLOBAL_SIGNATURES.get(platform) in js_globals:
             detected.append(platform)
 
     return detected

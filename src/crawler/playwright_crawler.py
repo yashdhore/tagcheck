@@ -99,4 +99,5 @@ def _dict_to_capture(raw: dict) -> PageCapture:
         error=raw.get("error"),
         captured_at=datetime.utcnow(),
         detected_platforms=raw.get("detected_platforms", []),
+        js_globals=raw.get("js_globals", []),
     )

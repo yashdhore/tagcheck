@@ -133,3 +133,52 @@ def test_errored_page_produces_critical_finding():
     })
     assert run.critical_count >= 1
     assert any(f.rule_name == "page_load_error" for f in run.findings)
+
+
+def test_self_hosted_launch_and_first_party_beacon_pass(client_cfg, rule_set):
+    """Banks often self-host Launch and send beacons to their own smetrics domain."""
+    page = PageCapture(
+        url="https://www.examplebank.com/",
+        page_type="home",
+        requests=[
+            CapturedRequest(url="https://www.examplebank.com/etc/launch-ENabc123.min.js", method="GET", timestamp_ms=100),
+            CapturedRequest(url="https://smetrics.examplebank.com/b/ss/bankprod/1/JS-2.22/s1?pageName=home", method="GET", timestamp_ms=200),
+        ],
+    )
+    run = run_audit([page], client_cfg, rule_set, {"period_label": "T", "run_id": "t100", "started_at": datetime.utcnow()})
+    failing = {f.rule_name for f in run.findings if f.severity != Severity.PASS}
+    assert "launch_loaded" not in failing
+    assert "page_view" not in failing
+    assert not any(f.category == RuleCategory.LOAD_ORDER for f in run.findings)
+
+
+def test_satellite_global_counts_as_launch_loaded(client_cfg, rule_set):
+    page = PageCapture(url="https://www.examplebank.com/", page_type="home", js_globals=["_satellite"])
+    run = run_audit([page], client_cfg, rule_set, {"period_label": "T", "run_id": "t101", "started_at": datetime.utcnow()})
+    assert "launch_loaded" not in {f.rule_name for f in run.findings}
+
+
+def test_category_pass_rates_stay_between_0_and_100(client_cfg, rule_set):
+    """A page failing several rules in one category used to show a negative rate."""
+    page = PageCapture(url="https://www.examplebank.com/", page_type="home")
+    run = run_audit([page], client_cfg, rule_set, {"period_label": "T", "run_id": "t102", "started_at": datetime.utcnow()})
+    rates = run.pass_rate_by_category()
+    assert all(0.0 <= r <= 100.0 for r in rates.values())
+    assert rates["Tag presence"] == 0.0
+
+
+def test_ga4_collect_on_either_domain_counts_as_page_view():
+    """GA4 hits go to google-analytics.com or analytics.google.com, never both in one URL."""
+    gtm_rules = load_rule_set("google_tag_manager_core")
+    cfg = {"client": {"id": "t", "name": "t"},
+           "page_types": {"default": {"pattern": ".*", "expected_events": ["page_view"]}}}
+    page = PageCapture(
+        url="https://www.example.com/",
+        page_type="default",
+        requests=[
+            CapturedRequest(url="https://www.googletagmanager.com/gtag/js?id=G-ABC123", method="GET", timestamp_ms=100),
+            CapturedRequest(url="https://region1.google-analytics.com/g/collect?v=2&tid=G-ABC123&en=page_view", method="POST", timestamp_ms=200),
+        ],
+    )
+    run = run_audit([page], cfg, gtm_rules, {"period_label": "T", "run_id": "t103", "started_at": datetime.utcnow()})
+    assert not [f for f in run.findings if f.severity != Severity.PASS]

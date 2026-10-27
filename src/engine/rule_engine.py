@@ -127,18 +127,26 @@ def _check_tag_presence(
 
 def _tag_is_present(page: PageCapture, rule_cfg: dict) -> bool:
     url_patterns = rule_cfg.get("match_url_contains", [])
+    any_patterns = rule_cfg.get("match_url_any", [])
     dl_event = rule_cfg.get("data_layer_event")
+    js_global = rule_cfg.get("js_global")
     required_params = rule_cfg.get("required_params", [])
 
-    if url_patterns:
+    if js_global and js_global in page.js_globals:
+        return True
+
+    if url_patterns or any_patterns:
         for req in page.requests:
-            if all(p in req.url for p in url_patterns):
-                if required_params:
-                    qs = req.url + "&".join(f"{k}={v}" for k, v in req.query_params.items())
-                    if all(p in qs for p in required_params):
-                        return True
-                else:
+            if url_patterns and not all(p in req.url for p in url_patterns):
+                continue
+            if any_patterns and not any(p in req.url for p in any_patterns):
+                continue
+            if required_params:
+                qs = req.url + "&".join(f"{k}={v}" for k, v in req.query_params.items())
+                if all(p in qs for p in required_params):
                     return True
+            else:
+                return True
 
     if dl_event:
         for push in page.data_layer:
@@ -325,20 +333,24 @@ def _check_load_order(page: PageCapture, rule_set: dict) -> list[Finding]:
     req_urls = [r.url for r in page.requests]
 
     for rule in lo_cfg.get("rules", []):
-        first_pattern = rule.get("first", "")
+        first_patterns = rule.get("first", "")
         before_pattern = rule.get("before", "")
 
-        if not first_pattern or not before_pattern:
+        if not first_patterns or not before_pattern:
             continue
+        if isinstance(first_patterns, str):
+            first_patterns = [first_patterns]
+        first_pattern = rule.get("first_label") or first_patterns[0]
 
         first_idx = next(
-            (i for i, u in enumerate(req_urls) if first_pattern in u), None
+            (i for i, u in enumerate(req_urls) if any(p in u for p in first_patterns)), None
         )
         before_idx = next(
             (i for i, u in enumerate(req_urls) if before_pattern in u), None
         )
 
-        if before_idx is not None and (first_idx is None or first_idx > before_idx):
+        # if the library never loaded at all, tag presence already reports it
+        if before_idx is not None and first_idx is not None and first_idx > before_idx:
             findings.append(Finding(
                 severity=sev,
                 category=RuleCategory.LOAD_ORDER,

@@ -416,9 +416,30 @@ if page == "Dashboard":
     if all_saved:
         run = load_run(all_saved[0])
 
-    if run is None:
+    showing_sample = run is None
+    if showing_sample:
         run = _load_sample_run()
         st.info("No audit runs yet — showing demo data. Use **Run Audit** to generate a real report.")
+
+    # earlier audits of the same site, oldest first, for the trend and the delta
+    history: list[AuditRun] = []
+    if not showing_sample:
+        for path in all_saved:
+            try:
+                past = load_run(path)
+            except Exception:
+                continue
+            if past.client_name == run.client_name:
+                history.append(past)
+        history.sort(key=lambda r: r.completed_at or r.started_at)
+
+    prior = history[-2] if len(history) >= 2 else None
+    if prior is None:
+        delta_html = f'<div class="kpi-delta" style="color:{MUTED}">first audit of this site</div>'
+    else:
+        diff = round(run.pass_rate - prior.pass_rate, 1)
+        arrow, color = ("▲", GREEN) if diff >= 0 else ("▼", RED)
+        delta_html = f'<div class="kpi-delta" style="color:{color}">{arrow} {abs(diff)} pts vs previous audit</div>'
 
     # topbar
     st.markdown(f"""
@@ -442,7 +463,7 @@ if page == "Dashboard":
       <div class="kpi-card">
         <div class="kpi-label">Tags Passing</div>
         <div class="kpi-value kv-pass">{run.pass_rate}%</div>
-        <div class="kpi-delta" style="color:{GREEN}">▲ vs prior quarter</div>
+        {delta_html}
       </div>
       <div class="kpi-card">
         <div class="kpi-label">Critical Failures</div>
@@ -457,7 +478,7 @@ if page == "Dashboard":
       <div class="kpi-card">
         <div class="kpi-label">Pages Scanned</div>
         <div class="kpi-value kv-neutral">{run.total_pages}</div>
-        <div class="kpi-delta" style="color:{MUTED}">full sitemap</div>
+        <div class="kpi-delta" style="color:{MUTED}">{run.pages_with_errors} failed to load</div>
       </div>
     </div>
     """, unsafe_allow_html=True)
@@ -466,28 +487,40 @@ if page == "Dashboard":
     col_left, col_right = st.columns([1.35, 1])
 
     with col_left:
-        st.markdown('<div class="panel">', unsafe_allow_html=True)
         st.markdown(
             '<div class="panel-title">Pass Rate Trend '
-            '<span class="meta-note">quarterly runs</span></div>',
+            f'<span class="meta-note">audits of {run.client_name}</span></div>',
             unsafe_allow_html=True,
         )
 
-        # load trend data from sample if available
-        trend_data = {"Q3 2025": 76, "Q4 2025": 79, "Q1 2026": 83, "Q2 2026": 87}
-        sample_path = ROOT / "data" / "sample" / "vail_q2_2026.json"
-        if sample_path.exists() and selected_client == "vail_resorts":
-            raw = json.loads(sample_path.read_text())
-            if "_trend" in raw:
-                trend_data = {t["period"]: t["pass_rate"] for t in raw["_trend"]}
+        # real audits of this site; the demo trend only backs the sample run
+        if showing_sample:
+            raw = json.loads((ROOT / "data" / "sample" / "vail_q2_2026.json").read_text())
+            trend = [(t["period"], t["pass_rate"]) for t in raw.get("_trend", [])]
+        else:
+            trend = [
+                (f'{r.period_label} · {(r.completed_at or r.started_at).strftime("%b %d %H:%M")}', r.pass_rate)
+                for r in history[-8:]
+            ]
 
+        import altair as alt
         import pandas as pd
-        df = pd.DataFrame({"Period": list(trend_data.keys()), "Pass Rate (%)": list(trend_data.values())})
-        st.bar_chart(df.set_index("Period"), color=BLUE, height=200)
-        st.markdown('</div>', unsafe_allow_html=True)
+        df = pd.DataFrame(trend, columns=["Audit", "Pass rate (%)"])
+        chart = (
+            alt.Chart(df)
+            .mark_bar(color=BLUE)
+            .encode(
+                x=alt.X("Audit:N", sort=None, title=None, axis=alt.Axis(labelAngle=0)),
+                y=alt.Y("Pass rate (%):Q", scale=alt.Scale(domain=[0, 100])),
+                tooltip=["Audit", "Pass rate (%)"],
+            )
+            .properties(height=200)
+        )
+        st.altair_chart(chart, use_container_width=True)
+        if len(trend) < 2:
+            st.caption("Run this site again later to build a trend.")
 
     with col_right:
-        st.markdown('<div class="panel">', unsafe_allow_html=True)
         st.markdown('<div class="panel-title">By Rule Category</div>', unsafe_allow_html=True)
 
         cat_rates = run.pass_rate_by_category()
@@ -508,10 +541,8 @@ if page == "Dashboard":
               </div>
             </div>
             """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
     # findings table
-    st.markdown('<div class="panel">', unsafe_allow_html=True)
     critical_findings = [f for f in run.findings if f.severity == Severity.CRITICAL]
     warning_findings = [f for f in run.findings if f.severity == Severity.WARNING]
     all_findings = critical_findings + warning_findings
@@ -532,7 +563,7 @@ if page == "Dashboard":
         rows = "".join(
             f'<tr>'
             f'<td>{_sev_pill(f.severity.value)}</td>'
-            f'<td><span class="mono">{f.page_url.replace("https://","").split("?")[0]}</span></td>'
+            f'<td><span class="mono">{f.page_url.split("://", 1)[-1].split("?")[0]}</span></td>'
             f'<td>{f.description}</td>'
             f'<td>{f.detail[:80] + "…" if len(f.detail) > 80 else f.detail}</td>'
             f'<td>{f.category.value}</td>'
@@ -552,8 +583,6 @@ if page == "Dashboard":
         _render_findings_table(critical_findings)
     with tab_all:
         _render_findings_table(all_findings)
-
-    st.markdown('</div>', unsafe_allow_html=True)
 
     # export button
     col_dl, _ = st.columns([1, 3])
@@ -757,7 +786,7 @@ elif page == "Run Audit":
         all_f = crit + warn
         rows = "".join(
             f'<tr><td>{_sev_pill(f.severity.value)}</td>'
-            f'<td><span class="mono">{f.page_url.replace("https://","").split("?")[0]}</span></td>'
+            f'<td><span class="mono">{f.page_url.split("://", 1)[-1].split("?")[0]}</span></td>'
             f'<td>{f.description}</td>'
             f'<td style="font-size:12px;color:{MUTED};">{f.detail[:100] + "…" if len(f.detail) > 100 else f.detail}</td>'
             f'<td>{f.category.value}</td></tr>'

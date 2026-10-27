@@ -51,6 +51,7 @@ class PageCapture:
     error: str | None = None
     captured_at: datetime = field(default_factory=datetime.utcnow)
     detected_platforms: list[str] = field(default_factory=list)
+    js_globals: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -119,11 +120,12 @@ class AuditRun:
         return out
 
     def pass_rate_by_category(self) -> dict[str, float]:
+        """Percentage of pages with no failing finding in each category."""
         by_cat = self.findings_by_category()
         result = {}
+        denom = max(self.total_pages, 1)
         for cat in RuleCategory:
             findings = by_cat.get(cat.value, [])
-            failures = sum(1 for f in findings if f.severity != Severity.PASS)
-            denom = max(self.total_pages, 1)
-            result[cat.value] = round((1 - failures / denom) * 100, 1)
+            failing_pages = {f.page_url for f in findings if f.severity != Severity.PASS}
+            result[cat.value] = max(0.0, round((1 - len(failing_pages) / denom) * 100, 1))
         return result

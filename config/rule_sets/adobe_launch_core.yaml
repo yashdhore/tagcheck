@@ -15,16 +15,21 @@ version: "1.0"
 tag_presence:
   launch_loaded:
     description: "Adobe Launch library must load on every page"
-    match_url_contains:
+    # Launch is often self-hosted (e.g. /etc/launch-xxx.min.js), so accept
+    # any Launch-style file or the _satellite object it creates
+    match_url_any:
       - "assets.adobedtm.com"
-      - "launch-"
+      - "/launch-"
+      - "satelliteLib-"
+    js_global: "_satellite"
     severity: critical
 
   page_view:
     description: "Adobe Analytics page view beacon must fire"
+    # beacons go to omtrdc.net, 2o7.net or a first-party domain such as
+    # smetrics.example.com; the /b/ss/ path is common to all of them
     match_url_contains:
-      - "b/ss/"
-      - "omtrdc.net"
+      - "/b/ss/"
     data_layer_event: null
     severity: critical
 
@@ -106,7 +111,11 @@ load_order:
   rules:
     - name: "launch_before_analytics"
       description: "Adobe Launch library must load before any b/ss/ beacon fires"
-      first: "assets.adobedtm.com"
+      first_label: "Adobe Launch"
+      first:
+        - "assets.adobedtm.com"
+        - "/launch-"
+        - "satelliteLib-"
       before: "b/ss/"
 
     - name: "launch_in_head"

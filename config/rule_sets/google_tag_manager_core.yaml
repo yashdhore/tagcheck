@@ -16,7 +16,8 @@ tag_presence:
 
   page_view:
     description: "GA4 page_view event must fire"
-    match_url_contains:
+    # GA4 hits go to either domain (often with a region1. prefix)
+    match_url_any:
       - "google-analytics.com/g/collect"
       - "analytics.google.com/g/collect"
     data_layer_event: "page_view"
@@ -79,6 +80,9 @@ load_order:
   severity: critical
   rules:
     - name: "gtm_before_ga4"
-      description: "GTM must load before GA4 collect calls"
-      first: "googletagmanager.com/gtm.js"
+      description: "GTM or gtag.js must load before GA4 collect calls"
+      first_label: "GTM / gtag.js"
+      first:
+        - "googletagmanager.com/gtm.js"
+        - "googletagmanager.com/gtag/js"
       before: "google-analytics.com/g/collect"
