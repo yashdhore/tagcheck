@@ -175,10 +175,7 @@ def _check_duplicate_fires(page: PageCapture, rule_set: dict) -> list[Finding]:
     max_pur = dup_cfg.get("max_purchase_per_page", 1)
 
     # count analytics beacons (b/ss/ or ga4 collect)
-    beacon_count = sum(
-        1 for r in page.requests
-        if "b/ss/" in r.url or "g/collect" in r.url
-    )
+    beacon_count = sum(1 for r in page.requests if _is_page_view_beacon(r.url))
     if beacon_count > max_pv:
         findings.append(Finding(
             severity=sev,
@@ -203,6 +200,16 @@ def _check_duplicate_fires(page: PageCapture, rule_set: dict) -> list[Finding]:
         ))
 
     return findings
+
+
+def _is_page_view_beacon(url: str) -> bool:
+    # Adobe link-tracking hits carry pe=; GA4 sends every event (scrolls,
+    # clicks) to g/collect, so only its page_view events count
+    if "/b/ss/" in url:
+        return "pe=" not in url
+    if "g/collect" in url:
+        return "en=page_view" in url
+    return False
 
 
 # ── Naming conventions ────────────────────────────────────────────

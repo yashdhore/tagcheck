@@ -95,7 +95,7 @@ def _detect_platforms(requests, script_order, js_globals=()):
 
     SIGNATURES = {
         "adobe_launch":          ["assets.adobedtm.com", "launch-", "adobelaunch"],
-        "adobe_analytics":       ["b/ss/", "omtrdc.net", "2o7.net"],
+        "adobe_analytics":       ["b/ss/", "omtrdc.net", "2o7.net", "/ee/v1/interact", "/ee/v2/interact"],
         "google_tag_manager":    ["googletagmanager.com/gtm.js", "gtm.js"],
         "google_analytics_ga4":  ["google-analytics.com/g/collect", "analytics.google.com/g/collect"],
         "google_analytics_ua":   ["google-analytics.com/collect", "google-analytics.com/analytics.js"],

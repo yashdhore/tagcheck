@@ -182,3 +182,32 @@ def test_ga4_collect_on_either_domain_counts_as_page_view():
     )
     run = run_audit([page], cfg, gtm_rules, {"period_label": "T", "run_id": "t103", "started_at": datetime.utcnow()})
     assert not [f for f in run.findings if f.severity != Severity.PASS]
+
+
+def test_ga4_events_and_adobe_link_hits_are_not_duplicate_page_views(client_cfg, rule_set):
+    """One page view plus other GA4 events or Adobe link clicks is not a duplicate."""
+    page = PageCapture(
+        url="https://www.examplebank.com/",
+        page_type="home",
+        requests=[
+            CapturedRequest(url="https://www.examplebank.com/etc/launch-EN1.min.js", method="GET", timestamp_ms=100),
+            CapturedRequest(url="https://region1.google-analytics.com/g/collect?v=2&en=page_view", method="POST", timestamp_ms=200),
+            CapturedRequest(url="https://region1.google-analytics.com/g/collect?v=2&en=scroll", method="POST", timestamp_ms=300),
+            CapturedRequest(url="https://smetrics.examplebank.com/b/ss/prod/1/JS-2.22/s2?pe=lnk_o&pev2=nav", method="GET", timestamp_ms=400),
+        ],
+    )
+    run = run_audit([page], client_cfg, rule_set, {"period_label": "T", "run_id": "t104", "started_at": datetime.utcnow()})
+    assert not [f for f in run.findings if f.rule_name == "duplicate_page_view"]
+
+
+def test_adobe_web_sdk_edge_call_counts_as_page_view(client_cfg, rule_set):
+    page = PageCapture(
+        url="https://www.examplebank.com/",
+        page_type="home",
+        requests=[
+            CapturedRequest(url="https://www.examplebank.com/etc/launch-EN1.min.js", method="GET", timestamp_ms=100),
+            CapturedRequest(url="https://edge.adobedc.net/ee/v1/interact?configId=abc", method="POST", timestamp_ms=200),
+        ],
+    )
+    run = run_audit([page], client_cfg, rule_set, {"period_label": "T", "run_id": "t105", "started_at": datetime.utcnow()})
+    assert "page_view" not in {f.rule_name for f in run.findings}

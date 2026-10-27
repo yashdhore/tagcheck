@@ -26,10 +26,14 @@ tag_presence:
 
   page_view:
     description: "Adobe Analytics page view beacon must fire"
-    # beacons go to omtrdc.net, 2o7.net or a first-party domain such as
-    # smetrics.example.com; the /b/ss/ path is common to all of them
-    match_url_contains:
+    # AppMeasurement beacons use /b/ss/ (omtrdc.net, 2o7.net or a first-party
+    # smetrics domain); the newer Web SDK sends to an /ee/ edge endpoint
+    match_url_any:
       - "/b/ss/"
+      - "/ee/v1/interact"
+      - "/ee/v2/interact"
+      - "/ee/v1/collect"
+      - "/ee/v2/collect"
     data_layer_event: null
     severity: critical
 
