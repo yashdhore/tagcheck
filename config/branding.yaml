@@ -1,0 +1,4 @@
+# App-wide branding. Paths are relative to the project root.
+app_name: "Tag Health Check"
+company: "AnalyticsAI"
+logo: config/logo.jpg

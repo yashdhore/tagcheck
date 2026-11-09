@@ -7,15 +7,31 @@ from __future__ import annotations
 
 import io
 from datetime import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.utils.models import AuditRun
 
 # Brand colors (matches Streamlit app + logo palette)
-BLUE = (26 / 255, 92 / 255, 168 / 255)
-GREEN = (45 / 255, 184 / 255, 122 / 255)
-NAVY = (26 / 255, 45 / 255, 80 / 255)
+BLUE = (0 / 255, 98 / 255, 225 / 255)      # #0062E1
+GREEN = (45 / 255, 184 / 255, 122 / 255)   # #2DB87A (pass colour)
+NAVY = (0 / 255, 35 / 255, 94 / 255)       # #00235E
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def _logo_path() -> Path | None:
+    """Logo from config/branding.yaml, then assets/logo.png; None if neither exists."""
+    try:
+        import yaml
+        cfg = yaml.safe_load((ROOT / "config" / "branding.yaml").read_text(encoding="utf-8")) or {}
+        if cfg.get("logo") and (ROOT / cfg["logo"]).exists():
+            return ROOT / cfg["logo"]
+    except Exception:
+        pass
+    fallback = ROOT / "assets" / "logo.png"
+    return fallback if fallback.exists() else None
 LIGHT_GRAY = (0.95, 0.95, 0.95)
 RED = (0.78, 0.22, 0.18)
 AMBER = (0.83, 0.56, 0.15)
@@ -32,6 +48,7 @@ def export_pdf(run: "AuditRun") -> bytes:
         Table,
         TableStyle,
         HRFlowable,
+        Image,
     )
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib import colors
@@ -84,6 +101,18 @@ def export_pdf(run: "AuditRun") -> bytes:
     story = []
 
     # header
+    logo = _logo_path()
+    if logo is not None:
+        try:
+            from reportlab.lib.utils import ImageReader
+            iw, ih = ImageReader(str(logo)).getSize()
+            w = 35 * mm
+            img = Image(str(logo), width=w, height=w * ih / iw)
+            img.hAlign = "LEFT"
+            story.append(img)
+            story.append(Spacer(1, 3 * mm))
+        except Exception:
+            pass
     story.append(Paragraph("Tag Health Check — Audit Report", title_style))
     story.append(Paragraph(
         f"{run.client_name} &nbsp;·&nbsp; {run.period_label} &nbsp;·&nbsp; "

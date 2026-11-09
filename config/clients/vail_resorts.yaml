@@ -8,6 +8,7 @@ client:
   name: "Vail Resorts"
   id: vail_resorts
   contact: ""
+  logo: config/logo.jpg
 
 # Tag platform in use (adobe_launch | google_tag_manager | both)
 platform: adobe_launch

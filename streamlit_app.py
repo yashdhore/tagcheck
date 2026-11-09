@@ -17,6 +17,14 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 
+# ── page config (must be the first Streamlit call) ──────────────────
+st.set_page_config(
+    page_title="Tag Health Check — AnalyticsAI",
+    page_icon="🏷️",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
 # ── install Playwright browsers once (needed on Streamlit Cloud) ──
 import subprocess
 @st.cache_resource(show_spinner="Installing browser (first run only)…")
@@ -28,27 +36,33 @@ from src.utils.config_loader import list_clients, list_rule_sets, load_client, l
 from src.utils.models import AuditRun, Finding, RuleCategory, Severity
 from src.report.run_store import list_runs, load_run, save_run
 
-# ── brand palette (matches logo gradient) ─────────────────────────
-BLUE        = "#1A5CA8"
-BLUE_MID    = "#0F8EC4"
-TEAL        = "#00B5A3"
-GREEN       = "#2DB87A"
-NAVY        = "#1A2D50"
-LIGHT_BG    = "#F4F7FC"
-BORDER      = "#DDE3EE"
-MUTED       = "#6B7A99"
+# ── brand palette (sampled from config/logo.jpg) ──────────────────
+BLUE        = "#0062E1"   # logo frame / gradient top — primary
+BLUE_MID    = "#0B78A8"   # darkened gradient mid-tone (hover)
+TEAL        = "#30D998"   # logo gradient bottom (mint) — accents only
+GREEN       = "#2DB87A"   # pass / success severity colour
+NAVY        = "#00235E"   # logo wordmark — text, sidebar
+LIGHT_BG    = "#F2F7FC"
+BORDER      = "#D9E3F0"
+MUTED       = "#5D6B85"
+SIDEBAR_MUTED = "#8FA3C7"
 RED         = "#C8392B"
 AMBER       = "#D4880D"
 
-# ── page config ───────────────────────────────────────────────────
-st.set_page_config(
-    page_title="Tag Health Check — AnalyticsAI",
-    page_icon="🏷️",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+def _resolve_logo() -> Path:
+    """Logo path from config/branding.yaml, falling back to assets/logo.png."""
+    try:
+        import yaml
+        cfg = yaml.safe_load((ROOT / "config" / "branding.yaml").read_text(encoding="utf-8")) or {}
+        logo = cfg.get("logo")
+        if logo and (ROOT / logo).exists():
+            return ROOT / logo
+    except Exception:
+        pass
+    return ROOT / "assets" / "logo.png"
 
-LOGO_PATH = ROOT / "assets" / "logo.png"
+
+LOGO_PATH = _resolve_logo()
 
 # ── global CSS ────────────────────────────────────────────────────
 st.markdown(f"""
@@ -78,12 +92,12 @@ st.markdown(f"""
   section[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] *,
   section[data-testid="stSidebar"] .stSelectbox span,
   section[data-testid="stSidebar"] [data-baseweb="select"] {{
-      color: #1A2D50 !important;
+      color: {NAVY} !important;
       background: #ffffff !important;
   }}
   section[data-testid="stSidebar"] textarea,
   section[data-testid="stSidebar"] input {{
-      border: 1.5px solid #4A6FA5 !important;
+      border: 1.5px solid {BLUE} !important;
   }}
   section[data-testid="stSidebar"] .stSelectbox label,
   section[data-testid="stSidebar"] .stRadio label {{
@@ -259,7 +273,7 @@ st.markdown(f"""
   .about-body {{
       font-size: 15px;
       line-height: 1.7;
-      color: #2a3450;
+      color: {NAVY};
       max-width: 70ch;
   }}
   .about-section-title {{
@@ -307,7 +321,7 @@ st.markdown(f"""
   .grad-line {{
       height: 3px;
       width: 60px;
-      background: linear-gradient(90deg, {BLUE}, {GREEN});
+      background: linear-gradient(90deg, {BLUE}, {TEAL});
       border-radius: 2px;
       margin-top: 5px;
   }}
@@ -376,14 +390,14 @@ with st.sidebar:
     else:
         st.markdown(
             f'<div style="font-family:JetBrains Mono,monospace;font-size:20px;'
-            f'font-weight:800;letter-spacing:.08em;color:{GREEN};padding:8px 0 4px;">'
+            f'font-weight:800;letter-spacing:.08em;color:{TEAL};padding:8px 0 4px;">'
             f'ANALYTICSAI</div>',
             unsafe_allow_html=True,
         )
 
     st.markdown(
         f'<div style="font-family:JetBrains Mono,monospace;font-size:10px;'
-        f'color:#6B7A99;margin-bottom:20px;">TAG HEALTH CHECK</div>',
+        f'color:{SIDEBAR_MUTED};margin-bottom:20px;">TAG HEALTH CHECK</div>',
         unsafe_allow_html=True,
     )
 
@@ -535,7 +549,7 @@ if page == "Dashboard":
             st.markdown(f"""
             <div style="margin-bottom:10px;">
               <div style="display:flex;justify-content:space-between;
-                   font-size:12.5px;color:#2a3450;margin-bottom:4px;">
+                   font-size:12.5px;color:{NAVY};margin-bottom:4px;">
                 <span>{cat}</span>
                 <span style="font-family:JetBrains Mono,monospace;
                      font-size:11px;color:{color};font-weight:700;">{rate}%</span>
@@ -898,7 +912,7 @@ elif page == "About":
         else:
             st.markdown(
                 f'<div style="font-family:JetBrains Mono,monospace;font-size:28px;'
-                f'font-weight:800;background:linear-gradient(135deg,{BLUE},{GREEN});'
+                f'font-weight:800;background:linear-gradient(135deg,{BLUE},{BLUE_MID});'
                 f'-webkit-background-clip:text;-webkit-text-fill-color:transparent;'
                 f'padding:20px 0;">'
                 f'ANALYTICSAI</div>'
@@ -943,7 +957,7 @@ elif page == "About":
                     border:1.5px solid {BORDER};background:white;border-radius:6px;
                     padding:16px 18px;margin-bottom:10px;">
           <div style="width:36px;height:36px;border-radius:50%;
-                      background:linear-gradient(135deg,{BLUE},{GREEN});
+                      background:linear-gradient(135deg,{BLUE},{BLUE_MID});
                       color:white;font-family:JetBrains Mono,monospace;
                       font-size:11px;font-weight:700;flex-shrink:0;
                       display:flex;align-items:center;justify-content:center;">{num}</div>
@@ -954,7 +968,7 @@ elif page == "About":
                            text-transform:uppercase;letter-spacing:.08em;
                            border:1px solid currentColor;padding:2px 7px;{tag_style}">{tag}</span>
             </div>
-            <div style="font-size:13.5px;color:#3a4460;line-height:1.55;">{desc}</div>
+            <div style="font-size:13.5px;color:{NAVY};line-height:1.55;">{desc}</div>
           </div>
         </div>
         """, unsafe_allow_html=True)

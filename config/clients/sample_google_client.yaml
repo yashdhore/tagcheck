@@ -7,6 +7,7 @@ client:
   name: "Sample GTM Client"
   id: sample_gtm
   contact: ""
+  logo: config/logo.jpg
 
 platform: google_tag_manager
 rule_set: google_tag_manager_core
